@@ -1,0 +1,104 @@
+\documentclass{article}
+\usepackage[a4paper, margin=0.85in]{geometry}
+\usepackage{amsmath}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=black]{hyperref}
+\usepackage{xurl}
+\usepackage{csquotes}
+\usepackage{siunitx}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+
+\sisetup{per-mode=symbol, inter-unit-product={}}
+\DeclareSIUnit\EUR{EUR}
+\DeclareSIUnit\yr{yr}
+
+\newcommand{\noteDate}{2026-02-16}
+\newcommand{\noteAuthor}{Carlo Palazzi}
+\newcommand{\noteTitle}{Energy accounting notes}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\noteTitle}
+\rhead{\noteAuthor}
+\cfoot{\thepage}
+\setlength{\headheight}{36pt}
+\setlength{\headsep}{16pt}
+\setlist[itemize,enumerate]{nosep,topsep=3pt,leftmargin=*}
+
+\fancypagestyle{firstpage}{
+    \fancyhf{}
+    \lhead{\noteDate \\ \noteTitle}
+    \rhead{\noteAuthor}
+    \cfoot{\thepage}
+}
+
+\begin{document}
+\thispagestyle{firstpage}
+
+\textbf{Goal:} compare high-level national potential capacities and costs for solar, wind, nuclear, OTEC, geothermal etc. against demand.
+
+\subsection*{Recipe}
+\begin{enumerate}
+    \item Find annual demand in \si{\tera\watt\hour\per\yr} (or \si{\peta\watt\hour\per\yr}). Note the difference between primary demand (before efficiency losses) and final consumption. For example, Japan primary energy demand is around \SI{5000}{\tera\watt\hour\per\yr} with \SI{900}{\tera\watt\hour\per\yr} electricity demand \cite{ritchieEnergyProductionConsumption2020a}.
+    \item For each technology, find the technical potential installable capacity \(p\) (\si{\mega\watt}) (solar, wind, OTEC, geothermal), or annual potential energy \(e_{\text{annual}}\) (\si{\mega\watt\hour}). The link between the two is (where \(\kappa\) is capacity factor: hours operating at rated capacity / 8760 annual hours):
+    \begin{align}
+    e_{\text{annual}} = p\cdot 8760\cdot \kappa
+    \end{align}
+    \item If installable capacity estimates are missing (or to sense-check them), use technology footprint (m\(^2\)/MW) and compare with available land/sea area (especially for solar and wind). For geothermal and OTEC, might need to get more creative than land-use and availability, e.g. use parallels with countries where technical potential has been estimated.
+    \item Find generation cost assumptions by technology: CapEx in \si{\EUR\per\mega\watt}, lifetime \(y\), and capacity factor \(\kappa\). Ignore storage for now. You can get capital costs in literature or data sheets (such as my personal faves from the \href{https://ens.dk/en/analyses-and-statistics/technology-catalogues}{Danish Energy Agency} \cite{danishenergyagencyTechnologyCataloguesEnergistyrelsen2024}): look at the cost per MW of technology capacity. E.g. Offshore wind AC \(\SI{2390000}{\EUR\per\mega\watt}\), with \(y=30\) years and \(\kappa=0.40\). Pick an interest rate \(\iota\) (example: 10\%).
+    \item To convert CapEx to an annuity (rent-like annual payment), we use the capital recovery factor (CRF, or \(a\) for annuitisation factor):
+    \begin{align}
+    a = \frac{\iota(1+\iota)^y}{(1+\iota)^y-1}
+    \end{align}
+    For offshore wind with \(\iota=10\%\) and \(y=30\), \(a\approx 0.106\).
+    \item We can now compute, for installed capacity \(p\), annuitised capital payment and annual energy:
+    \begin{align}
+        C_{\text{annual}} = \text{CapEx}\cdot p\cdot a,\qquad e_{\text{annual}} = p\cdot 8760\cdot \kappa
+    \end{align}
+    Build-out example for intuition: if offshore wind technical potential is \(\SI{100}{\giga\watt}=\SI{100000}{\mega\watt}\) (fixed-bottom), then annual production at \(\kappa=0.40\) is
+    \begin{align}
+    e_{\text{annual}} = 100{,}000\cdot 8760\cdot 0.40 = \SI{350.4}{\tera\watt\hour\per\yr}
+    \end{align}
+    Compare this to demand:
+    \begin{align}
+    e_{\text{demand}}\approx \SI{900}{\tera\watt\hour\per\yr},\qquad e_{\text{offwind,max}}\approx \SI{350.4}{\tera\watt\hour\per\yr}
+    \end{align}
+    So other energy sources (e.g. floating wind) would likely be needed in addition.
+    Total upfront CapEx is \(C_{\text{upfront}} = 2{,}390{,}000\cdot 100{,}000 = \SI{239}{\giga\EUR}\), with annuitised capital payment \(C_{\text{annual}} = C_{\text{upfront}}\cdot a \approx \SI{25.3}{\giga\EUR\per\yr}\).
+    \item And now compute the levelised cost of electricity (LCOE) (CapEx-only as we've ignored OpEx):
+    \begin{align}
+    \text{LCOE}_{\text{capex}} = \frac{C_{\text{annual}}}{e_{\text{annual}}} = \frac{\text{CapEx}\cdot p\cdot a}{e_{\text{annual}}} = \frac{\text{CapEx}\cdot a}{8760\cdot \kappa}
+    \end{align}
+    For this per-unit cost, \(p\) cancels out.
+    E.g. for our offshore wind:
+    \begin{align}
+    \text{LCOE}_{\text{capex}}\approx \frac{2{,}390{,}000\times 0.106}{8760\times 0.40}\approx \SI{72}{\EUR\per\mega\watt\hour}
+    \end{align}
+    For slightly fuller accounting, add OpEx\footnote{Here \(\text{OpEx}=\frac{\text{OpEx}_{\text{fixed}}}{8760\cdot\kappa}+\text{OpEx}_{\text{variable}}\), with \(\text{OpEx}_{\text{fixed}}\) in \((\si{\EUR\per\mega\watt\per\yr})\) and \(\text{OpEx}_{\text{variable}}\) in \((\si{\EUR\per\mega\watt\hour})\).}:
+    \begin{align}
+    \text{LCOE} = \frac{\text{CapEx}\cdot a}{8760\cdot \kappa} + \text{OpEx}
+    \end{align}
+    \item Compare at the end to potential energy import costs from literature. For example, there is a plant-gate green ammonia estimate of \(\SI{60.71}{\EUR\per\mega\watt\hour_{\text{HHV}}}\) (converted from AUD/t to 2020 EUR)\cite{fletcherQueenslandGreenAmmonia2023}\footnote{A 2050 UK imported-green-ammonia value including shipping of \(\SI{30}{\EUR\per\mega\watt\hour}\) is also reported \cite{palazziGreenAmmoniaImports2024}; treat this as uncertain and scenario-dependent.}. Assuming ammonia-to-power turbine efficiency \(\eta_{\text{turb,HHV}}=0.55\), the fuel-only imported electricity cost is \(C_{\text{el,import}}=C_{\text{NH}_3,\text{HHV}}/\eta_{\text{turb,HHV}}\), giving (at minimum, since this excludes shipping and other logistics costs):
+    \begin{align}
+    C_{\text{el,import}}\approx \frac{60.71}{0.55}=\SI{110.4}{\EUR\per\mega\watt\hour}.
+    \end{align}
+    We can now compare offshore-wind electricity cost \(C_{\text{el,offwind}}\), imported-ammonia electricity cost \(C_{\text{el,import}}\), and current market electricity cost \(C_{\text{el,market}}\) (e.g. currently reported Japan price).
+    \begin{align}
+    C_{\text{el,offwind}}\approx \SI{72}{\EUR\per\mega\watt\hour},\qquad C_{\text{el,import}}\approx \SI{110.4}{\EUR\per\mega\watt\hour},\qquad C_{\text{el,market}}\approx \SI{80}{\EUR\per\mega\watt\hour}
+    \end{align}
+    So, if storage and distribution constraints/costs are roughly comparable across options, \(C_{\text{el,offwind}}\) appears market-competitive, while green-ammonia-based imports look more expensive but still in a similar order of magnitude.
+    \item Consider limitations. What fraction of costs might we have missed not accounting for storage and transmission? Would the added costs apply similarly to all the technologies we want to compare? 
+\end{enumerate}
+
+\subsection*{Warnings}
+\begin{itemize}
+    \item \(\text{MW}_{\text{in}}\) vs \(\text{MW}_{\text{out}}\): you can think of power as \(\text{MWh/h}\), and that can be input-energy flow or output-energy flow. Generators (like wind and solar) are usually costed per \(\text{MW}_{\text{out}}\). Energy converters (which are often called \enquote{links}), such as electrolysers, are usually specified on \(\text{MW}_{\text{in}}\). Gas turbines are technically energy converters (gas \(\rightarrow\) electricity) but are usually costed as generators on \(\text{MW}_{\text{out}}\). I prefer to report \textit{all} technology costs on a \(\text{MW}_{\text{out}}\) basis, although e.g. PyPSA-Earth uses \(\text{MW}_{\text{out}}\) for generators and \(\text{MW}_{\text{in}}\) for links.
+    \item Higher vs Lower heating value (HHV vs LHV) basis: efficiencies are basis-dependent, so values are not directly comparable unless the basis is stated. Methane example: HHV \(\approx 15.4\,\text{MWh}/\text{t}_{\text{CH}_4}\), LHV \(\approx 13.9\,\text{MWh}/\text{t}_{\text{CH}_4}\); the \(\approx 1.5\,\text{MWh}/\text{t}_{\text{CH}_4}\) gap is latent heat of water condensation\footnote{This is the heat left in atmospheric water vapour by the combustion -- which can only be recaptured by something like a condensing boiler}. Many turbine efficiencies are reported on LHV basis (numerically higher for electricity production), while e.g. electrolysers are often reported on HHV basis (numerically higher for hydrogen production). For example, if a turbine delivers \(7.7\,\text{MWh}_{\text{el}}/\text{t}_{\text{CH}_4}\), efficiency is \(7.7/15.4\approx 50\%\) on HHV or \(7.7/13.9\approx 55\%\) on LHV; if an electrolyser uses \(50\,\text{MWh}_{\text{el}}/\text{t}_{\text{H}_2}\), efficiency is \(39.4/50\approx 79\%\) on HHV or \(33.3/50\approx 67\%\) on LHV. I prefer to report \textit{all} technology costs on a HHV basis, although e.g. the European and PyPSA-Earth convention is LHV.  
+    \item Currency: normalise all costs to e.g. 2020 EUR like the DEA data sheets. All costs in this work are normalised to this currency. 
+\end{itemize}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
